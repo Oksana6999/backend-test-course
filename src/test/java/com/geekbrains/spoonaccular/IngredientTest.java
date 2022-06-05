@@ -16,73 +16,47 @@ import static io.restassured.RestAssured.baseURI;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class IngredientTest {
+public class IngredientTest extends SpoonaccularTest {
 
-    private final static String Api_Key = "1a608945db2c4bc990df4bc27e96ad0a";
 
-    @BeforeAll
-    static void beforeAll() {
-
-        baseURI = "https://api.spoonacular.com/food/ingredients/";
-
-    }
 
     @Test
-    void substitutesIngredientTest() throws IOException {
+    void substitutesIngredientTest() throws Exception {
         String actually = given()
-                .log()
-                .all()
-                .param("apiKey", Api_Key)
                 .pathParam("id", 1001)
                 .expect()
-                .log()
-                .body()
                 .when()
-                .get("{id}/substitutes")
+                .get("food/ingredients/{id}/substitutes")
                 .prettyPrint();
-        String expected = getResourceAsString("IngredientTest/substitutes.json");
+        String expected = getResource("substitutes.json");
 
-        JsonAssert.assertJsonEquals(
-                expected,
-                actually,
-                JsonAssert.when(Option.IGNORING_ARRAY_ORDER)
-        );
+       assertJson(expected, actually);
     }
 
     @Test
     void convertAmountsTest() {
         given()
-                .log()
-                .all()
-                .param("apiKey", Api_Key)
                 .param("ingredientName", "flour")
                 .param("sourceAmount", "3.5")
                 .param("sourceUnit", "cups")
                 .param("targetUnit", "grams")
                 .expect()
-                .log()
-                .body()
                 .body("sourceAmount", is(3.5F))
                 .body("targetAmount", is(437.5F))
                 .when()
-                .get("https://api.spoonacular.com/recipes/convert")
+                .get("recipes/convert")
                 .prettyPrint();
     }
 
     @Test
     void computeGlycemicLoadTest() {
+
         given()
-                .log()
-                .all()
                 .body("{ \"ingredients\":[ \"1 kiwi\", \"2 cups rice\", \"2 glasses of water\" ] }")
                 .expect()
-                .log()
-                .body()
-                .body("code", is(401))
-                .body("status", is("failure"))
-                .body("message", is("You are not authorized. Please read https://spoonacular.com/food-api/docs#Authentication"))
+                .body("status", is("success"))
                 .when()
-                .post("https://api.spoonacular.com/food/ingredients/glycemicLoad")
+                .post("food/ingredients/glycemicLoad")
                 .prettyPrint();
 
     }
@@ -90,55 +64,33 @@ public class IngredientTest {
     @Test
     void ingredientSearchTest() {
 
-
-
         given()
-                .log()
-                .all()
-                .param("apiKey", Api_Key)
                 .queryParam("query", "fish")
                 .queryParam("number", 3)
                 .queryParam("sort", "calories")
                 .expect()
-                .log()
-                .body()
                 .body("results[0].id", is(99121))
                 .body("results[1].name", is("fish seasoning"))
                 .body("number", is(3))
                 .when()
-                .get("search")
+                .get("food/ingredients/search")
                 .prettyPrint();
 
     }
 
     @Test
-    void getSimilarRecipesTest() throws IOException {
+    void getSimilarRecipesTest() throws Exception {
         String actually = given()
-                .log()
-                .all()
-                .param("apiKey", Api_Key)
                 .pathParam("id", "71553")
                 .expect()
-                .log()
-                .body()
                 .when()
-                .get("https://api.spoonacular.com/recipes/{id}/similar")
+                .get("recipes/{id}/similar")
                 .prettyPrint();
 
-        String expected = getResourceAsString("GetSimilarRecipesTest/expected.json");
+        String expected = getResource("similarExpected.json");
 
-        JsonAssert.assertJsonEquals(
-                expected,
-                actually,
-                JsonAssert.when(Option.IGNORING_ARRAY_ORDER)
-        );
+        assertJson(expected, actually);
     }
 
 
-    public String getResourceAsString(String resource) throws IOException {
-        InputStream stream = getClass().getResourceAsStream(resource);
-        assert stream != null;
-        byte[] bytes = stream.readAllBytes();
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
 }
